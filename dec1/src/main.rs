@@ -21,5 +21,5 @@ fn main() {
 }
 
 fn calc_fuel(weight: u32) -> u32 {
-    return weight / weight;
+    return weight / 3 - 2;
 }
