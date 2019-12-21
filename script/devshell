@@ -1,0 +1,10 @@
+#!/bin/bash
+
+cd "$(dirname "$0")/.."
+
+docker run -it --rm \
+  -v $(pwd):/work \
+  -w /work \
+  -u 1000 \
+  aoc2019 \
+  /bin/bash
