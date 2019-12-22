@@ -18,8 +18,8 @@ fn main() {
         }
     }
 
-    //memory[0] = 12;
-    //memory[1] = 2;
+    memory[1] = 12;
+    memory[2] = 2;
 
     let mut pc = 0;
     loop {
@@ -33,17 +33,18 @@ fn main() {
                 let destloc = memory[pc+3];
                 memory[destloc] = memory[loc1] + memory[loc2];
             },
-            //1 => memory[memory[pc+3]] = memory[memory[pc+1]] + memory[memory[pc+2]],
-            //1 => set(memory, pc+3, get(memory, pc+1) + get(memory, pc + 2)),
-            //1 => memory[memory[pc+3]] = memory[memory[pc+1]] + memory[memory[pc+2]],
-            //2 => memory[memory[pc+3]] = memory[memory[pc+1]] * memory[memory[pc+2]],
+            2 => {
+                let loc1 = memory[pc+1];
+                let loc2 = memory[pc+2];
+                let destloc = memory[pc+3];
+                memory[destloc] = memory[loc1] * memory[loc2];
+            },
             99 => break,
             _ => panic!("unrecognized opcode {} at pc={}", opcode, pc),
         }
         pc+=4;
     }
 
-    println!("ALL => {:?}", memory);
     println!("POSITION ZERO => {}", memory[0]);
 }
 
