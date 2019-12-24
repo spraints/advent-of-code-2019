@@ -1,6 +1,12 @@
 use std::collections::HashMap;
 use std::io;
 
+type Segment = (char, u32);
+type Path = Vec<Segment>;
+type Coord = (i32, i32);
+type Location = (u8, u32);
+type Grid = HashMap<Coord, Location>;
+
 fn main() {
     println!("WIRE DETANGLER");
 
@@ -19,7 +25,7 @@ fn main() {
     println!("MIN DISTANCE: {}", res);
 }
 
-fn plot(mut grid: &mut HashMap<(i32, i32), (u8, u32)>, path: Vec<(char, u32)>, wire_name: u8) {
+fn plot(mut grid: &mut Grid, path: Path, wire_name: u8) {
     let mut coords = (0, 0);
     for segment in path {
         println!("{:?} --> {:?}", coords, segment);
@@ -37,19 +43,14 @@ fn plot(mut grid: &mut HashMap<(i32, i32), (u8, u32)>, path: Vec<(char, u32)>, w
     println!("{:?}", coords);
 }
 
-fn walk<F>(
-    mut grid: &mut HashMap<(i32, i32), (u8, u32)>,
-    coords: (i32, i32),
-    wire_name: u8,
-    count: u32,
-    step: F,
-) -> (i32, i32)
+fn walk<F>(grid: &mut Grid, coords: Coord, wire_name: u8, count: u32, step: F) -> Coord
 where
-    F: Fn((i32, i32)) -> (i32, i32),
+    F: Fn(Coord) -> Coord,
 {
     let mut res = coords;
     for _ in 0..count {
         res = step(res);
+        // TODO fix mutable/immutable borrowing conflict here.
         match grid.get(&res) {
             None => grid.insert(res, (wire_name, calc_dist(&res))),
             Some((wire_names, dist)) => grid.insert(res, (wire_names | wire_name, *dist)),
@@ -58,12 +59,12 @@ where
     res
 }
 
-fn calc_dist(coords: &(i32, i32)) -> u32 {
+fn calc_dist(coords: &Coord) -> u32 {
     let (x, y) = coords;
     (x.abs() + y.abs()) as u32
 }
 
-fn read_path() -> Vec<(char, u32)> {
+fn read_path() -> Path {
     let mut line = String::new();
     io::stdin()
         .read_line(&mut line)
@@ -71,7 +72,7 @@ fn read_path() -> Vec<(char, u32)> {
     line.trim().split(',').map(|s| parse_segment(s)).collect()
 }
 
-fn parse_segment(s: &str) -> (char, u32) {
+fn parse_segment(s: &str) -> Segment {
     let direction = s.chars().nth(0).unwrap();
     let distance = match s.get(1..) {
         Some(part) => part.parse().expect("COULD NOT PARSE"),
