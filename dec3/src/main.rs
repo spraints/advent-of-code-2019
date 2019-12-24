@@ -3,31 +3,28 @@ use std::io;
 fn main() {
     println!("WIRE DETANGLER");
 
-    //let mut wires = vec![];
-    let mut line = String::new();
+    let mut wires = vec![];
 
-    while 0 < io::stdin()
-        .read_line(&mut line)
-        .expect("Error reading STDIN")
-    {
-        println!("LINE {}", line);
-        let parts = line.trim().split(',').map(|s| parse_segment(s));
-        println!("{:?}", parts);
-        for p in parts {
-            println!("{:?}", p);
+    loop {
+        let mut line = String::new();
+        let n = io::stdin()
+            .read_line(&mut line)
+            .expect("Error reading STDIN");
+        if n == 0 {
+            break;
         }
-        line.clear();
-        //wires.push(parse_wire(line));
+        let parts: Vec<(char, u32)> = line.trim().split(',').map(|s| parse_segment(s)).collect();
+        println!("{:?}", parts);
+        wires.push(parts);
     }
 }
 
 fn parse_segment(s: &str) -> (char, u32) {
     let direction = s.chars().nth(0).unwrap();
-    let distance =
-        match s.get(1..) {
-            Some(part) => part.parse().expect("COULD NOT PARSE"),
-            None => 0,
-        };
+    let distance = match s.get(1..) {
+        Some(part) => part.parse().expect("COULD NOT PARSE"),
+        None => 0,
+    };
     (direction, distance)
 }
 
