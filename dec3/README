@@ -1,0 +1,4 @@
+$ cargo run < ex1.txt
+159
+$ cargo run < ex2.txt
+135
