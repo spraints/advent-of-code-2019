@@ -11,7 +11,7 @@ fn main() {
         .expect("Error reading STDIN")
     {
         println!("LINE {}", line);
-        let parts = line.trim().split(',').map(|s| (s.get(0..1), s.get(1..)));
+        let parts = line.trim().split(',').map(|s| parse_segment(s));
         println!("{:?}", parts);
         for p in parts {
             println!("{:?}", p);
@@ -19,6 +19,16 @@ fn main() {
         line.clear();
         //wires.push(parse_wire(line));
     }
+}
+
+fn parse_segment(s: &str) -> (char, u32) {
+    let direction = s.chars().nth(0).unwrap();
+    let distance =
+        match s.get(1..) {
+            Some(part) => part.parse().expect("COULD NOT PARSE"),
+            None => 0,
+        };
+    (direction, distance)
 }
 
 //fn parse_wire(line: &str) -> Wire {
