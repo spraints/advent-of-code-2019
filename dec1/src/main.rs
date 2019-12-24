@@ -20,6 +20,11 @@ fn main() {
     println!("got it: {}", fuel);
 }
 
-fn calc_fuel(weight: u32) -> u32 {
-    return weight / 3 - 2;
+fn calc_fuel(weight: i32) -> i32 {
+    let fuel = weight / 3 - 2;
+    if fuel <= 0 {
+        0
+    } else {
+        fuel + calc_fuel(fuel)
+    }
 }
