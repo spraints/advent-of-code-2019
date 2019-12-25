@@ -6,5 +6,6 @@ docker run -it --rm \
   -v $(pwd):/work \
   -w /work \
   -u 1000 \
+  -e USER=vscode \
   aoc2019 \
   /bin/bash

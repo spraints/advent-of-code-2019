@@ -5,7 +5,7 @@ fn main() {
     println!("INTCODE ONLINE");
     println!("--------------");
 
-    let mut memory: Vec<usize> = vec![];
+    let mut memory = vec![];
     let mut line = String::new();
     while 0 < io::stdin()
         .read_line(&mut line)
@@ -16,6 +16,7 @@ fn main() {
         for n in data {
             memory.push(n)
         }
+        line.clear();
     }
 
     tryrun(&memory, 12, 2, 2);
