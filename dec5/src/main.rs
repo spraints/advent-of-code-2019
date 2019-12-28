@@ -1,5 +1,7 @@
 use std::io;
 
+type Memory = Vec<usize>;
+
 fn main() {
     println!("--------------");
     println!("INTCODE ONLINE");
@@ -10,7 +12,7 @@ fn main() {
         .read_line(&mut line)
         .expect("Error reading program from STDIN");
     let parts = line.trim().split(',');
-    let memory: Vec<usize> = parts
+    let memory: Memory = parts
         .map(|s| s.parse().expect("Error parsing int"))
         .collect();
 
@@ -19,7 +21,7 @@ fn main() {
     run(&mut memory.clone());
 }
 
-fn run(mut memory: &mut Vec<usize>) {
+fn run(mut memory: &mut Memory) {
     let opcodes = [op_add, op_mult, op_input, op_output];
 
     let mut pc = 0;
@@ -63,8 +65,8 @@ impl Iterator for ModesIter {
     }
 }
 
-fn get_params(memory: &Vec<usize>, modes: ModesIter, pc: usize, count: usize) -> Vec<usize> {
-    let params: Vec<usize> = memory[pc + 1..pc + 1 + count]
+fn get_params(memory: &Memory, modes: ModesIter, pc: usize, count: usize) -> Memory {
+    let params: Memory = memory[pc + 1..pc + 1 + count]
         .into_iter()
         .zip(modes)
         .map(|(raw, mode)| match mode {
@@ -76,7 +78,7 @@ fn get_params(memory: &Vec<usize>, modes: ModesIter, pc: usize, count: usize) ->
     params
 }
 
-fn op_add(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
+fn op_add(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
@@ -85,7 +87,7 @@ fn op_add(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     pc + 4
 }
 
-fn op_mult(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
+fn op_mult(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
@@ -94,7 +96,7 @@ fn op_mult(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     pc + 4
 }
 
-fn op_input(memory: &mut Vec<usize>, _: ModesIter, pc: usize) -> usize {
+fn op_input(memory: &mut Memory, _: ModesIter, pc: usize) -> usize {
     let mut line = String::new();
     io::stdin()
         .read_line(&mut line)
@@ -104,7 +106,7 @@ fn op_input(memory: &mut Vec<usize>, _: ModesIter, pc: usize) -> usize {
     pc + 2
 }
 
-fn op_output(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
+fn op_output(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 1);
     println!(" ==> {}", params[0]);
     pc + 2
