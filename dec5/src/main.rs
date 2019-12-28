@@ -31,43 +31,75 @@ fn run(mut memory: &mut Vec<usize>) {
             break;
         } else {
             let opfn = opcodes[opcode - 1];
-            pc = opfn(&mut memory, op / 100, pc);
+            pc = opfn(&mut memory, modes(op / 100), pc);
             println!("[{}] {:?}", pc, memory);
         }
     }
 }
 
-fn get_params(memory: &Vec<usize>, modes: usize, pc: usize, count: usize) -> Vec<usize> {
-    let modes: Vec<char> = modes.to_string().chars().rev().collect();
-    let params = memory[pc+1..].zip(modes .resize(count, '0')).map(|(raw, mode)| if mode == '0' { memory[raw] } else { raw });
+fn modes(modes: usize) -> ModesIter {
+    ModesIter { modes }
+}
+
+struct ModesIter {
+    modes: usize,
+}
+
+enum ModeType {
+    Position,
+    Immediate,
+}
+
+impl Iterator for ModesIter {
+    type Item = ModeType;
+    fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.modes % 10;
+        self.modes = self.modes / 10;
+        Some(if cur == 0 {
+            ModeType::Position
+        } else {
+            ModeType::Immediate
+        })
+    }
+}
+
+fn get_params(memory: &Vec<usize>, modes: ModesIter, pc: usize, count: usize) -> Vec<usize> {
+    let params: Vec<usize> = memory[pc + 1..pc + 1 + count]
+        .into_iter()
+        .zip(modes)
+        .map(|(raw, mode)| match mode {
+            ModeType::Position => memory[*raw],
+            ModeType::Immediate => *raw,
+        })
+        .collect();
     assert_eq!(count, params.len());
     params
 }
 
-fn op_add(memory: &mut Vec<usize>, modes: usize, pc: usize) -> usize {
+fn op_add(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc+3];
+    let dest_addr = memory[pc + 3];
     memory[dest_addr] = arg1 + arg2;
     pc + 4
 }
 
-fn op_mult(memory: &mut Vec<usize>, modes: usize, pc: usize) -> usize {
+fn op_mult(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc+3];
+    let dest_addr = memory[pc + 3];
     memory[dest_addr] = arg1 * arg2;
     pc + 4
 }
 
-fn op_input(memory: &mut Vec<usize>, modes: usize, pc: usize) -> usize {
+fn op_input(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     println!("TODO: read input");
     pc + 2
 }
 
-fn op_output(memory: &mut Vec<usize>, modes: usize, pc: usize) -> usize {
+fn op_output(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     println!("TODO: read output");
     pc + 2
 }
