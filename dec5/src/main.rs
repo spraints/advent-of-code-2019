@@ -94,12 +94,18 @@ fn op_mult(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
     pc + 4
 }
 
-fn op_input(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
-    println!("TODO: read input");
+fn op_input(memory: &mut Vec<usize>, _: ModesIter, pc: usize) -> usize {
+    let mut line = String::new();
+    io::stdin()
+        .read_line(&mut line)
+        .expect("Error reading input from STDIN");
+    let dest_addr = memory[pc + 1];
+    memory[dest_addr] = line.trim().parse().expect("Error parsing int for input");
     pc + 2
 }
 
 fn op_output(memory: &mut Vec<usize>, modes: ModesIter, pc: usize) -> usize {
-    println!("TODO: read output");
+    let params = get_params(&memory, modes, pc, 1);
+    println!(" ==> {}", params[0]);
     pc + 2
 }
