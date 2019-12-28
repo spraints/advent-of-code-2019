@@ -1,6 +1,6 @@
 use std::io;
 
-type Memory = Vec<usize>;
+type Memory = Vec<i32>;
 
 fn main() {
     println!("--------------");
@@ -27,7 +27,7 @@ fn run(mut memory: &mut Memory) {
     let mut pc = 0;
     println!("[{}] {:?}", pc, memory);
     loop {
-        let op = memory[pc];
+        let op = memory[pc] as usize;
         let opcode = op % 100;
         if opcode == 99 {
             break;
@@ -70,7 +70,7 @@ fn get_params(memory: &Memory, modes: ModesIter, pc: usize, count: usize) -> Mem
         .into_iter()
         .zip(modes)
         .map(|(raw, mode)| match mode {
-            ModeType::Position => memory[*raw],
+            ModeType::Position => memory[*raw as usize],
             ModeType::Immediate => *raw,
         })
         .collect();
@@ -82,7 +82,7 @@ fn op_add(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc + 3];
+    let dest_addr = memory[pc + 3] as usize;
     memory[dest_addr] = arg1 + arg2;
     pc + 4
 }
@@ -91,7 +91,7 @@ fn op_mult(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc + 3];
+    let dest_addr = memory[pc + 3] as usize;
     memory[dest_addr] = arg1 * arg2;
     pc + 4
 }
@@ -101,7 +101,7 @@ fn op_input(memory: &mut Memory, _: ModesIter, pc: usize) -> usize {
     io::stdin()
         .read_line(&mut line)
         .expect("Error reading input from STDIN");
-    let dest_addr = memory[pc + 1];
+    let dest_addr = memory[pc + 1] as usize;
     memory[dest_addr] = line.trim().parse().expect("Error parsing int for input");
     pc + 2
 }
