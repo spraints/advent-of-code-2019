@@ -22,11 +22,22 @@ fn main() {
 }
 
 fn run(mut memory: &mut Memory) {
-    let opcodes = [op_add, op_mult, op_input, op_output];
+    let opcodes = [
+        op_add,
+        op_mult,
+        op_input,
+        op_output,
+        op_jump_if_true,
+
+        op_jump_if_false,
+        op_lt,
+        op_eq,
+    ];
 
     let mut pc = 0;
     println!("[{}] {:?}", pc, memory);
     loop {
+        println!(" ... {:?} ...", memory.get(pc..pc+4));
         let op = memory[pc] as usize;
         let opcode = op % 100;
         if opcode == 99 {
@@ -110,4 +121,41 @@ fn op_output(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
     let params = get_params(&memory, modes, pc, 1);
     println!(" ==> {}", params[0]);
     pc + 2
+}
+
+fn op_jump_if_true(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
+    jump_if(true, memory, modes, pc)
+}
+
+fn op_jump_if_false(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
+    jump_if(false, memory, modes, pc)
+}
+
+fn jump_if(cond: bool, memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
+    let params = get_params(&memory, modes, pc, 2);
+    let arg1 = params[0];
+    let arg2 = params[1];
+    if (cond && arg1 != 0) || (!cond && arg1 == 0) {
+        arg2 as usize
+    } else {
+        pc + 3
+    }
+}
+
+fn op_lt(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
+    let params = get_params(&memory, modes, pc, 2);
+    let arg1 = params[0];
+    let arg2 = params[1];
+    let dest_addr = memory[pc + 3] as usize;
+    memory[dest_addr] = if arg1 < arg2 { 1 } else { 0 };
+    pc + 4
+}
+
+fn op_eq(memory: &mut Memory, modes: ModesIter, pc: usize) -> usize {
+    let params = get_params(&memory, modes, pc, 2);
+    let arg1 = params[0];
+    let arg2 = params[1];
+    let dest_addr = memory[pc + 3] as usize;
+    memory[dest_addr] = if arg1 == arg2 { 1 } else { 0 };
+    pc + 4
 }
