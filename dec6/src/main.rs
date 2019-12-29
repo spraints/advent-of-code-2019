@@ -1,35 +1,53 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 
+#[derive(Debug)]
 struct Orbit {
     center: String,
     satellite: String,
 }
 
 type Orbits = Vec<Orbit>;
-type OrbitTree = HashMap<String, String>;
 
-fn main() {
-    let orbits = make_tree(read_orbits());
-    println!("{:?}", orbits);
-
-    let mut total_dist = 0;
-    let the_center = "COM".to_string();
-    for satellite in orbits.keys() {
-        println!("{}:", satellite);
-        total_dist = total_dist + dist_to(&orbits, satellite, &the_center);
-    }
-
-    println!("TOTAL DISTANCE: {}", total_dist);
+struct OrbObj {
+    name: String,
+    center: String,
+    satellites: Vec<String>,
 }
 
-fn dist_to(orbits: &OrbitTree, satellite: &String, dest: &String) -> u32 {
-    let center = orbits.get(satellite).unwrap();
-    println!("-> {}", center);
-    if center == dest {
-        1
-    } else {
-        1 + dist_to(orbits, center, dest)
+type OrbitGraph = HashMap<String, OrbObj>;
+
+fn main() {
+    let orbits = read_orbits();
+    //println!("{:?}", orbits);
+    let orbits = make_graph(orbits);
+
+    println!("TOTAL ORBITS: {}", walk_dist(&orbits, "COM"));
+}
+
+fn walk_dist(objs: &OrbitGraph, center: &str) -> u32 {
+    walk_dist2(objs, &center.to_string()).1
+}
+
+// Returns (num_descendants, orbits)
+fn walk_dist2(objs: &OrbitGraph, center: &String) -> (u32, u32) {
+    match objs.get(center) {
+        None => {
+            println!("WARNING! tried to walk to {}, but it isn't found!", center);
+            (0, 0)
+        }
+        Some(obj) => {
+            let mut res = (0, 0);
+            for sat in &obj.satellites {
+                let satres = walk_dist2(objs, sat);
+                // Descendents accumulates all of the satellite's descendants, plus the satellite.
+                res.0 = res.0 + satres.0 + 1;
+                // Orbits accumulates all of the satellite's orbits, plus one more for each
+                // descendant, plus one for this orbit.
+                res.1 = res.1 + satres.1 + satres.0 + 1;
+            }
+            res
+        }
     }
 }
 
@@ -50,10 +68,39 @@ fn read_orbits() -> Orbits {
     res
 }
 
-fn make_tree(orbits: Orbits) -> OrbitTree {
+fn make_graph(orbits: Orbits) -> OrbitGraph {
     let mut res = HashMap::new();
     for orbit in orbits {
-        res.insert(orbit.satellite, orbit.center);
+        match res.get_mut(&orbit.satellite) {
+            None => {
+                res.insert(
+                    orbit.satellite.to_string(),
+                    OrbObj {
+                        name: orbit.satellite.to_string(),
+                        center: orbit.center.to_string(),
+                        satellites: vec![],
+                    },
+                );
+            }
+            Some(obj) => {
+                obj.center = orbit.center.to_string();
+            }
+        };
+        match res.get_mut(&orbit.center) {
+            None => {
+                res.insert(
+                    orbit.center.to_string(),
+                    OrbObj {
+                        name: orbit.center.to_string(),
+                        center: "??".to_string(),
+                        satellites: vec![orbit.satellite.to_string()],
+                    },
+                );
+            }
+            Some(obj) => {
+                obj.satellites.push(orbit.satellite.to_string());
+            }
+        };
     }
     res
 }
