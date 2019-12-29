@@ -1,10 +1,16 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead};
 
-type Orbits = HashMap<String, String>;
+struct Orbit {
+    center: String,
+    satellite: String,
+}
+
+type Orbits = Vec<Orbit>;
+type OrbitTree = HashMap<String, String>;
 
 fn main() {
-    let orbits = read_orbits();
+    let orbits = make_tree(read_orbits());
     println!("{:?}", orbits);
 
     let mut total_dist = 0;
@@ -17,7 +23,7 @@ fn main() {
     println!("TOTAL DISTANCE: {}", total_dist);
 }
 
-fn dist_to(orbits: &Orbits, satellite: &String, dest: &String) -> u32 {
+fn dist_to(orbits: &OrbitTree, satellite: &String, dest: &String) -> u32 {
     let center = orbits.get(satellite).unwrap();
     println!("-> {}", center);
     if center == dest {
@@ -28,12 +34,26 @@ fn dist_to(orbits: &Orbits, satellite: &String, dest: &String) -> u32 {
 }
 
 fn read_orbits() -> Orbits {
-    let mut res: Orbits = HashMap::new();
+    let mut res = vec![];
     for line in io::stdin().lock().lines() {
-        let parts: Vec<String> = line.unwrap().trim().split(')').map(|s| s.to_string()).collect();
-        let center = &parts[0];
-        let satellite = &parts[1];
-        res.insert(satellite.to_string(), center.to_string());
+        let parts: Vec<String> = line
+            .unwrap()
+            .trim()
+            .split(')')
+            .map(|s| s.to_string())
+            .collect();
+        res.push(Orbit {
+            center: parts[0].to_string(),
+            satellite: parts[1].to_string(),
+        });
+    }
+    res
+}
+
+fn make_tree(orbits: Orbits) -> OrbitTree {
+    let mut res = HashMap::new();
+    for orbit in orbits {
+        res.insert(orbit.satellite, orbit.center);
     }
     res
 }
