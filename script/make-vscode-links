@@ -1,0 +1,8 @@
+#!/bin/bash
+#/ Set up links so I can open any of the solutions in a VSCode remote container.
+
+cd $(dirname $0)/..
+for d in dec*; do
+  ln -sv ../.devcontainer $d 2>/dev/null
+  ln -sv ../.vscode $d 2>/dev/null
+done
