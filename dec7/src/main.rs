@@ -9,8 +9,8 @@ fn main() {
     //println!("INPUT {:?}", memory);
     intcode_run(&mut IntCodeComputer {
         memory: memory.clone(),
-        input: Box::new(IntCodeStdinInput {}),
-        output: Box::new(IntCodePrintlnOutput {}),
+        input: intcode_debug_input(intcode_stdin_input()),
+        output: intcode_debug_output(intcode_null_output()),
     });
 }
 
@@ -196,6 +196,29 @@ fn intcode_op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: us
     pc + 4
 }
 
+////////
+// I/O
+
+fn intcode_debug_input(input: Box<dyn IntCodeInput>) -> Box<dyn IntCodeInput> {
+    Box::new(IntCodeDebugInput { input })
+}
+
+struct IntCodeDebugInput {
+    input: Box<dyn IntCodeInput>,
+}
+
+impl IntCodeInput for IntCodeDebugInput {
+    fn read_int(&self) -> i32 {
+        let res = self.input.read_int();
+        println!("  (read: {})", res);
+        res
+    }
+}
+
+fn intcode_stdin_input() -> Box<dyn IntCodeInput> {
+    Box::new(IntCodeStdinInput {})
+}
+
 struct IntCodeStdinInput {}
 
 impl IntCodeInput for IntCodeStdinInput {
@@ -208,10 +231,27 @@ impl IntCodeInput for IntCodeStdinInput {
     }
 }
 
-struct IntCodePrintlnOutput {}
+fn intcode_debug_output(output: Box<dyn IntCodeOutput>) -> Box<dyn IntCodeOutput> {
+    Box::new(IntCodeDebugOutput { output })
+}
 
-impl IntCodeOutput for IntCodePrintlnOutput {
+struct IntCodeDebugOutput {
+    output: Box<dyn IntCodeOutput>,
+}
+
+impl IntCodeOutput for IntCodeDebugOutput {
     fn write_int(&self, i: i32) {
-        println!(" ==> {}", i);
+        println!("  (output: {})", i);
+        self.output.write_int(i);
     }
+}
+
+fn intcode_null_output() -> Box<dyn IntCodeOutput> {
+    Box::new(IntCodeNullOutput {})
+}
+
+struct IntCodeNullOutput {}
+
+impl IntCodeOutput for IntCodeNullOutput {
+    fn write_int(&self, _: i32) {}
 }
