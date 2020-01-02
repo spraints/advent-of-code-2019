@@ -7,11 +7,29 @@ fn main() {
 
     let memory = intcode_read_program();
     //println!("INPUT {:?}", memory);
-    intcode_run(&mut memory.clone());
+    intcode_run(&mut IntCodeComputer {
+        memory: memory.clone(),
+        input: Box::new(IntCodeStdinInput {}),
+        output: Box::new(IntCodePrintlnOutput {}),
+    });
 }
 
 //////////
 // INTCODE
+
+struct IntCodeComputer {
+    memory: IntCodeMemory,
+    input: Box<dyn IntCodeInput>,
+    output: Box<dyn IntCodeOutput>,
+}
+
+trait IntCodeInput {
+    fn read_int(&self) -> i32;
+}
+
+trait IntCodeOutput {
+    fn write_int(&self, _: i32);
+}
 
 type IntCodeMemory = Vec<i32>;
 
@@ -26,7 +44,7 @@ fn intcode_read_program() -> IntCodeMemory {
         .collect()
 }
 
-fn intcode_run(mut memory: &mut IntCodeMemory) {
+fn intcode_run(mut computer: &mut IntCodeComputer) {
     let opcodes = [
         intcode_op_add,
         intcode_op_mult,
@@ -39,17 +57,17 @@ fn intcode_run(mut memory: &mut IntCodeMemory) {
     ];
 
     let mut pc = 0;
-    println!("[{}] {:?}", pc, memory);
+    println!("[{}] {:?}", pc, computer.memory);
     loop {
-        println!(" ... {:?} ...", memory.get(pc..pc + 4));
-        let op = memory[pc] as usize;
+        println!(" ... {:?} ...", computer.memory.get(pc..pc + 4));
+        let op = computer.memory[pc] as usize;
         let opcode = op % 100;
         if opcode == 99 {
             break;
         } else {
             let opfn = opcodes[opcode - 1];
-            pc = opfn(&mut memory, intcode_modes(op / 100), pc);
-            println!("[{}] {:?}", pc, memory);
+            pc = opfn(&mut computer, intcode_modes(op / 100), pc);
+            println!("[{}] {:?}", pc, computer.memory);
         }
     }
 }
@@ -98,63 +116,59 @@ fn intcode_get_params(
     params
 }
 
-fn intcode_op_add(memory: &mut IntCodeMemory, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&memory, modes, pc, 2);
+fn intcode_op_add(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
+    let params = intcode_get_params(&computer.memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc + 3] as usize;
-    memory[dest_addr] = arg1 + arg2;
+    let dest_addr = computer.memory[pc + 3] as usize;
+    computer.memory[dest_addr] = arg1 + arg2;
     pc + 4
 }
 
-fn intcode_op_mult(memory: &mut IntCodeMemory, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&memory, modes, pc, 2);
+fn intcode_op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
+    let params = intcode_get_params(&computer.memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc + 3] as usize;
-    memory[dest_addr] = arg1 * arg2;
+    let dest_addr = computer.memory[pc + 3] as usize;
+    computer.memory[dest_addr] = arg1 * arg2;
     pc + 4
 }
 
-fn intcode_op_input(memory: &mut IntCodeMemory, _: IntCodeModesIter, pc: usize) -> usize {
-    let mut line = String::new();
-    io::stdin()
-        .read_line(&mut line)
-        .expect("Error reading input from STDIN");
-    let dest_addr = memory[pc + 1] as usize;
-    memory[dest_addr] = line.trim().parse().expect("Error parsing int for input");
+fn intcode_op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter, pc: usize) -> usize {
+    let dest_addr = computer.memory[pc + 1] as usize;
+    computer.memory[dest_addr] = computer.input.read_int();
     pc + 2
 }
 
-fn intcode_op_output(memory: &mut IntCodeMemory, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&memory, modes, pc, 1);
-    println!(" ==> {}", params[0]);
+fn intcode_op_output(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
+    let params = intcode_get_params(&computer.memory, modes, pc, 1);
+    computer.output.write_int(params[0]);
     pc + 2
 }
 
 fn intcode_op_jump_if_true(
-    memory: &mut IntCodeMemory,
+    computer: &mut IntCodeComputer,
     modes: IntCodeModesIter,
     pc: usize,
 ) -> usize {
-    intcode_jump_if(true, memory, modes, pc)
+    intcode_jump_if(true, computer, modes, pc)
 }
 
 fn intcode_op_jump_if_false(
-    memory: &mut IntCodeMemory,
+    computer: &mut IntCodeComputer,
     modes: IntCodeModesIter,
     pc: usize,
 ) -> usize {
-    intcode_jump_if(false, memory, modes, pc)
+    intcode_jump_if(false, computer, modes, pc)
 }
 
 fn intcode_jump_if(
     cond: bool,
-    memory: &mut IntCodeMemory,
+    computer: &mut IntCodeComputer,
     modes: IntCodeModesIter,
     pc: usize,
 ) -> usize {
-    let params = intcode_get_params(&memory, modes, pc, 2);
+    let params = intcode_get_params(&computer.memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
     if (cond && arg1 != 0) || (!cond && arg1 == 0) {
@@ -164,20 +178,40 @@ fn intcode_jump_if(
     }
 }
 
-fn intcode_op_lt(memory: &mut IntCodeMemory, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&memory, modes, pc, 2);
+fn intcode_op_lt(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
+    let params = intcode_get_params(&computer.memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc + 3] as usize;
-    memory[dest_addr] = if arg1 < arg2 { 1 } else { 0 };
+    let dest_addr = computer.memory[pc + 3] as usize;
+    computer.memory[dest_addr] = if arg1 < arg2 { 1 } else { 0 };
     pc + 4
 }
 
-fn intcode_op_eq(memory: &mut IntCodeMemory, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&memory, modes, pc, 2);
+fn intcode_op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
+    let params = intcode_get_params(&computer.memory, modes, pc, 2);
     let arg1 = params[0];
     let arg2 = params[1];
-    let dest_addr = memory[pc + 3] as usize;
-    memory[dest_addr] = if arg1 == arg2 { 1 } else { 0 };
+    let dest_addr = computer.memory[pc + 3] as usize;
+    computer.memory[dest_addr] = if arg1 == arg2 { 1 } else { 0 };
     pc + 4
+}
+
+struct IntCodeStdinInput {}
+
+impl IntCodeInput for IntCodeStdinInput {
+    fn read_int(&self) -> i32 {
+        let mut line = String::new();
+        io::stdin()
+            .read_line(&mut line)
+            .expect("Error reading input from STDIN");
+        line.trim().parse().expect("Error parsing int for input")
+    }
+}
+
+struct IntCodePrintlnOutput {}
+
+impl IntCodeOutput for IntCodePrintlnOutput {
+    fn write_int(&self, i: i32) {
+        println!(" ==> {}", i);
+    }
 }
