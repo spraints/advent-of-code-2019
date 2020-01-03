@@ -1,4 +1,7 @@
 use std::io;
+use std::sync::mpsc;
+use std::sync::mpsc::{Receiver, Sender};
+use std::thread;
 
 fn main() {
     println!("--------------");
@@ -13,6 +16,8 @@ fn main() {
 }
 
 fn part1(program: &IntCodeMemory) {
+    println!("PART 1");
+    println!("------");
     let mut max_out = 0;
     for inputs in all_perms([0, 1, 2, 3, 4]) {
         let out = try_inputs(&program, inputs);
@@ -24,38 +29,43 @@ fn part1(program: &IntCodeMemory) {
 }
 
 fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5]) -> i32 {
-    let mut last_output = 0;
+    let (last_tx, mut last_rx) = mpsc::channel();
+    last_tx.send(0).unwrap();
+
+    let mut threads = vec![];
+
     for input in &inputs {
-        let vals: [i32; 2] = [*input, last_output];
+        let (in_tx, in_rx) = mpsc::channel();
+        let (out_tx, out_rx) = mpsc::channel();
+
+        let input = *input;
+
         let mut computer = IntCodeComputer {
             memory: program.clone(),
-            inputs: Box::new(FFFFFFFU { vals, cursor: 0 }),
-            outputs: vec![],
+            inputs: in_rx,
+            outputs: out_tx,
             verbose: false,
         };
-        intcode_run(&mut computer);
-        assert_eq!(1, computer.outputs.len());
-        last_output = computer.outputs[0];
-    }
-    //println!("{:?} => {}", inputs, last_output);
-    last_output
-}
 
-struct FFFFFFFU {
-    vals: [i32; 2],
-    cursor: usize,
-}
+        threads.push(thread::spawn(move || {
+            in_tx.send(input).unwrap();
+            in_tx.send(last_rx.recv().unwrap()).unwrap();
+        }));
 
-impl Iterator for FFFFFFFU {
-    type Item = i32;
-    fn next(&mut self) -> Option<i32> {
-        if self.cursor >= 2 {
-            None
-        } else {
-            self.cursor += 1;
-            Some(self.vals[self.cursor - 1])
-        }
+        threads.push(thread::spawn(move || {
+            intcode_run(&mut computer);
+        }));
+
+        last_rx = out_rx;
     }
+
+    for t in threads {
+        t.join().expect("thread should run without error");
+    }
+
+    last_rx
+        .recv()
+        .expect("last program should output one value")
 }
 
 fn all_perms(vals: [i32; 5]) -> Vec<[i32; 5]> {
@@ -90,8 +100,8 @@ fn heap_permutation(res: &mut Vec<[i32; 5]>, vals: &mut [i32; 5], size: usize) {
 
 struct IntCodeComputer {
     memory: IntCodeMemory,
-    inputs: Box<dyn Iterator<Item = i32>>,
-    outputs: Vec<i32>,
+    inputs: Receiver<i32>,
+    outputs: Sender<i32>,
     verbose: bool,
 }
 
@@ -214,18 +224,10 @@ fn intcode_op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: 
 
 fn intcode_op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter, pc: usize) -> usize {
     let dest_addr = computer.memory[pc + 1] as usize;
-    let val = match computer.inputs.next() {
-        None => {
-            println!("ERROR!!! expected to find an input, but didn't!");
-            0
-        }
-        Some(n) => {
-            if computer.verbose {
-                println!("  (read: {})", n);
-            }
-            n
-        }
-    };
+    let val = computer.inputs.recv().unwrap();
+    if computer.verbose {
+        println!("  (read: {})", val);
+    }
     computer.memory[dest_addr] = val;
     pc + 2
 }
@@ -236,7 +238,7 @@ fn intcode_op_output(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc
     if computer.verbose {
         println!("  (output: {})", val);
     }
-    computer.outputs.push(val);
+    computer.outputs.send(val).unwrap();
     pc + 2
 }
 
