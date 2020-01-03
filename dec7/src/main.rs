@@ -6,6 +6,13 @@ fn main() {
     println!("--------------");
 
     let program = intcode_read_program();
+
+    part1(&program);
+
+    //part2(&program);
+}
+
+fn part1(program: &IntCodeMemory) {
     let mut max_out = 0;
     for inputs in all_perms([0, 1, 2, 3, 4]) {
         let out = try_inputs(&program, inputs);
