@@ -19,3 +19,18 @@ $ cargo run < ex3.txt
 65210
 ```
 
+# Example 4
+
+```
+$ cargo run < ex4.txt
+PART 2
+139629729
+```
+
+# Example 5
+
+```
+$ cargo run < ex5.txt
+PART 2
+18216
+```
