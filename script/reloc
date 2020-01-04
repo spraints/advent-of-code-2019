@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if [ $# -ne 1 ] || [ ! -f "dec$1/src/main.rs" ]; then
+  echo Usage: $0 N
+  exit 1
+fi
+
+n=$1
+
+set -xe
+
+mkdir -p data/day$n
+git mv dec$n/src/main.rs src/bin/day$n.rs
+git mv dec$n/ex* data/day$n/
+git mv dec$n/input data/day$n/
+script/run day$n
+ls dec$n
