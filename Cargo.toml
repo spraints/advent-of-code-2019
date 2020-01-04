@@ -1,0 +1,9 @@
+[package]
+name = "spraints-advent-of-code-2019"
+version = "0.7.0"
+authors = ["Matt Burke <spraints@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
