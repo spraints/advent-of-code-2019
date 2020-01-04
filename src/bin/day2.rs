@@ -31,6 +31,27 @@ fn main() {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    fn test_computer(mut memory: Vec<usize>, expected: Vec<usize>) {
+        super::run(&mut memory, 0);
+        assert_eq!(expected, memory);
+    }
+
+    #[test]
+    fn test_ex1() {
+        test_computer(
+            vec![1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50],
+            vec![3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50],
+        );
+    }
+
+    #[test]
+    fn test_ex2() {
+        test_computer(vec![1, 0, 0, 0, 99], vec![2, 0, 0, 0, 99]);
+    }
+}
+
 fn tryrun(memory: &Vec<usize>, one: usize, two: usize, verbose_level: u8) -> usize {
     let mut runmem = memory.to_vec();
     runmem[1] = one;

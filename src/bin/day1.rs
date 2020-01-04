@@ -7,7 +7,9 @@ fn main() {
 
     loop {
         let mut line = String::new();
-        let bytes = io::stdin().read_line(&mut line).expect("Error reading from stdin");
+        let bytes = io::stdin()
+            .read_line(&mut line)
+            .expect("Error reading from stdin");
         if bytes == 0 {
             break;
         }
