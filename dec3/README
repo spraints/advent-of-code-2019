@@ -1,6 +1,0 @@
-$ cargo run < ex1.txt
-manhattan: 159
-steps: 610
-$ cargo run < ex2.txt
-manhattan: 135
-steps: 410
