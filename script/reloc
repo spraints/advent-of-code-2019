@@ -11,7 +11,7 @@ set -xe
 
 mkdir -p data/day$n
 git mv dec$n/src/main.rs src/bin/day$n.rs
-git mv dec$n/ex* data/day$n/
-git mv dec$n/input data/day$n/
+git mv dec$n/ex* data/day$n/ || true
+git mv dec$n/input data/day$n/ || true
 script/run day$n
 ls dec$n
