@@ -2,7 +2,6 @@ use std::io;
 
 #[cfg(test)]
 mod tests {
-    use super::OutputPixel::*;
     use super::*;
 
     #[test]
@@ -28,7 +27,7 @@ mod tests {
     fn test_render() {
         let image = parse_image("0222112222120000", 2, 2);
         assert_eq!(
-            vec![vec![Black, White], vec![White, Black],],
+            vec![vec![BLACK, WHITE], vec![WHITE, BLACK],],
             render(&image)
         );
     }
@@ -62,62 +61,31 @@ fn dump(image: &Image) {
 type Image = Vec<Layer>;
 type Layer = Vec<Vec<u8>>;
 
-type ColorizedImage = Vec<ColorizedLayer>;
-type ColorizedLayer = Vec<Vec<InputPixel>>;
-#[derive(Debug)]
-enum InputPixel {
-    Color(OutputPixel),
-    Transparent,
-}
-
-type Rendered = Vec<Vec<OutputPixel>>;
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum OutputPixel {
-    Black, // 0
-    White, // 1
-}
-
 type ImageScore = Vec<LayerScore>;
 type LayerScore = [u32; 10];
 
-fn render(image: &Image) -> Rendered {
+const BLACK: u8 = 0;
+const WHITE: u8 = 1;
+const TRANSPARENT: u8 = 2;
+
+fn render(image: &Image) -> Layer {
     let (width, height, _) = get_dims(&image);
-    let image = colorize(image);
     let mut res = vec![];
     for i in 0..height {
         let mut row = vec![];
         for j in 0..width {
-            let mut output_color = OutputPixel::Black;
+            let mut output_color = 2;
             for layer in image.iter().rev() {
-                match layer[i][j] {
-                    InputPixel::Transparent => (),
-                    InputPixel::Color(color) => output_color = color,
-                };
+                let pixel = layer[i][j];
+                if pixel < TRANSPARENT {
+                    output_color = pixel;
+                }
             }
             row.push(output_color);
         }
         res.push(row);
     }
     res
-}
-
-fn colorize(image: &Image) -> ColorizedImage {
-    image.iter().map(|layer| colorize_layer(layer)).collect()
-}
-
-fn colorize_layer(layer: &Layer) -> ColorizedLayer {
-    layer
-        .iter()
-        .map(|row| row.iter().map(|cell| decode_pixel(cell)).collect())
-        .collect()
-}
-
-fn decode_pixel(enc: &u8) -> InputPixel {
-    match enc {
-        0 => InputPixel::Color(OutputPixel::Black),
-        1 => InputPixel::Color(OutputPixel::White),
-        _ => InputPixel::Transparent,
-    }
 }
 
 // Returns (width, height, depth)
