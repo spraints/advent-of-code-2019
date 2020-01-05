@@ -25,13 +25,28 @@ mod tests {
 }
 
 fn main() {
+    let verbose = false;
+
     let image = read_image(25, 6);
+    if verbose {
+        dump(&image);
+    }
+
     let scores = score_image(&image);
     let best_layer = scores.iter().fold(
-        [0; 10],
-        |res, score| if score[0] > res[0] { *score } else { res },
+        [99999; 10],
+        |res, score| if score[0] < res[0] { *score } else { res },
     );
     println!("CHECKSUM: {}", best_layer[1] * best_layer[2]);
+}
+
+fn dump(image: &Image) {
+    for layer in image {
+        println!("------");
+        for row in layer {
+            println!("{:?}", row);
+        }
+    }
 }
 
 type Image = Vec<Layer>;
