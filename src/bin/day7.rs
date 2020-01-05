@@ -1,4 +1,4 @@
-use spraints_advent_of_code_2019::intcode::{self, IntCodeComputer, IntCodeMemory};
+use spraints_advent_of_code_2019::intcode::{self, IntCodeMemory};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
@@ -93,22 +93,15 @@ fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
 
         let input = *input;
 
-        let computer = IntCodeComputer {
-            name: format!("[{}]", input),
-            memory: program.clone(),
-            inputs: in_rx,
-            outputs: out_tx,
-            verbose: false,
-        };
-
         threads.push(thread::spawn(move || {
             intcode_send(&in_tx, input);
             copy_chan(&format!("{} input", input), last_rx, in_tx);
         }));
 
+        let cloned_program = program.clone();
         threads.push(thread::spawn(move || {
-            //let name = computer.name.clone();
-            intcode::run(computer);
+            let name = format!("[{}]", input);
+            intcode::run(&name, cloned_program, in_rx, out_tx, false);
             //println!("{} finished!", name);
         }));
 
@@ -185,21 +178,15 @@ fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
 
         let input = *input;
 
-        let computer = IntCodeComputer {
-            name: format!("[{}]", input),
-            memory: program.clone(),
-            inputs: in_rx,
-            outputs: out_tx,
-            verbose: false,
-        };
-
         threads.push(thread::spawn(move || {
             intcode_send(&in_tx, input);
             intcode_send(&in_tx, last_rx.recv().unwrap().unwrap());
         }));
 
+        let cloned_program = program.clone();
         threads.push(thread::spawn(move || {
-            intcode::run(computer);
+            let name = format!("[{}]", input);
+            intcode::run(&name, cloned_program, in_rx, out_tx, false);
         }));
 
         last_rx = out_rx;

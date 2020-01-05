@@ -4,12 +4,12 @@
 use std::io;
 use std::sync::mpsc::{Receiver, Sender};
 
-pub struct IntCodeComputer {
-    pub name: String,
-    pub memory: IntCodeMemory,
-    pub inputs: Receiver<Option<i32>>,
-    pub outputs: Sender<Option<i32>>,
-    pub verbose: bool,
+struct IntCodeComputer {
+    name: String,
+    memory: IntCodeMemory,
+    inputs: Receiver<Option<i32>>,
+    outputs: Sender<Option<i32>>,
+    verbose: bool,
 }
 
 pub type IntCodeMemory = Vec<i32>;
@@ -25,7 +25,15 @@ pub fn read_program() -> IntCodeMemory {
         .collect()
 }
 
-pub fn run(mut computer: IntCodeComputer) {
+pub fn run(name: &str, memory: IntCodeMemory, inputs: Receiver<Option<i32>>, outputs: Sender<Option<i32>>, verbose: bool) -> IntCodeMemory {
+    let mut computer = IntCodeComputer{
+        name: name.to_string(),
+        memory,
+        inputs,
+        outputs,
+        verbose,
+    };
+
     let opcodes = [
         op_zero,
         // 1 - 5:
@@ -66,6 +74,8 @@ pub fn run(mut computer: IntCodeComputer) {
     }
 
     computer.outputs.send(None).unwrap_or(());
+
+    computer.memory
 }
 
 fn modes(modes: usize) -> IntCodeModesIter {
