@@ -27,11 +27,14 @@ pub fn read_program() -> IntCodeMemory {
 
 pub fn run(mut computer: IntCodeComputer) {
     let opcodes = [
+        op_zero,
+        // 1 - 5:
         op_add,
         op_mult,
         op_input,
         op_output,
         op_jump_if_true,
+        // 6 - 10:
         op_jump_if_false,
         op_lt,
         op_eq,
@@ -54,7 +57,7 @@ pub fn run(mut computer: IntCodeComputer) {
         if opcode == 99 {
             break;
         } else {
-            let opfn = opcodes[opcode - 1];
+            let opfn = opcodes[opcode];
             pc = opfn(&mut computer, modes(op / 100), pc);
             if computer.verbose {
                 println!("[{}/{}] {:?}", computer.name, pc, computer.memory);
@@ -107,6 +110,10 @@ fn get_params(
         .collect();
     assert_eq!(count, params.len());
     params
+}
+
+fn op_zero(_computer: &mut IntCodeComputer, _modes: IntCodeModesIter, _pc: usize) -> usize {
+    panic!("OP 0 DOES NOT EXIST");
 }
 
 fn op_add(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
