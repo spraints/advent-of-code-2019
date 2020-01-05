@@ -12,14 +12,6 @@ pub struct IntCodeComputer {
     pub verbose: bool,
 }
 
-trait IntCodeInput {
-    fn read_int(&mut self) -> i32;
-}
-
-trait IntCodeOutput {
-    fn write_int(&mut self, _: i32);
-}
-
 pub type IntCodeMemory = Vec<i32>;
 
 pub fn intcode_read_program() -> IntCodeMemory {
@@ -218,22 +210,3 @@ fn intcode_op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: us
     computer.memory[dest_addr] = if arg1 == arg2 { 1 } else { 0 };
     pc + 4
 }
-
-////////
-// I/O
-
-//fn intcode_stdin_input() -> Box<dyn IntCodeInput> {
-//    Box::new(IntCodeStdinInput {})
-//}
-//
-//struct IntCodeStdinInput {}
-//
-//impl IntCodeInput for IntCodeStdinInput {
-//    fn read_int(&mut self) -> i32 {
-//        let mut line = String::new();
-//        io::stdin()
-//            .read_line(&mut line)
-//            .expect("Error reading input from STDIN");
-//        line.trim().parse().expect("Error parsing int for input")
-//    }
-//}
