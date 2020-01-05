@@ -2,6 +2,7 @@ use std::io;
 
 #[cfg(test)]
 mod tests {
+    use super::OutputPixel::*;
     use super::*;
 
     #[test]
@@ -20,6 +21,15 @@ mod tests {
                 [1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
             ],
             score_image(&image)
+        );
+    }
+
+    #[test]
+    fn test_render() {
+        let image = parse_image("0222112222120000", 2, 2);
+        assert_eq!(
+            vec![vec![Black, White], vec![White, Black],],
+            render(&image)
         );
     }
 }
@@ -51,8 +61,75 @@ fn dump(image: &Image) {
 
 type Image = Vec<Layer>;
 type Layer = Vec<Vec<u8>>;
-type LayerScore = [u32; 10];
+
+type ColorizedImage = Vec<ColorizedLayer>;
+type ColorizedLayer = Vec<Vec<InputPixel>>;
+#[derive(Debug)]
+enum InputPixel {
+    Color(OutputPixel),
+    Transparent,
+}
+
+type Rendered = Vec<Vec<OutputPixel>>;
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum OutputPixel {
+    Black, // 0
+    White, // 1
+}
+
 type ImageScore = Vec<LayerScore>;
+type LayerScore = [u32; 10];
+
+fn render(image: &Image) -> Rendered {
+    let (width, height, _) = get_dims(&image);
+    let image = colorize(image);
+    let mut res = vec![];
+    for i in 0..height {
+        let mut row = vec![];
+        for j in 0..width {
+            let mut output_color = OutputPixel::Black;
+            for layer in image.iter().rev() {
+                match layer[i][j] {
+                    InputPixel::Transparent => (),
+                    InputPixel::Color(color) => output_color = color,
+                };
+            }
+            row.push(output_color);
+        }
+        res.push(row);
+    }
+    res
+}
+
+fn colorize(image: &Image) -> ColorizedImage {
+    image.iter().map(|layer| colorize_layer(layer)).collect()
+}
+
+fn colorize_layer(layer: &Layer) -> ColorizedLayer {
+    layer
+        .iter()
+        .map(|row| row.iter().map(|cell| decode_pixel(cell)).collect())
+        .collect()
+}
+
+fn decode_pixel(enc: &u8) -> InputPixel {
+    match enc {
+        0 => InputPixel::Color(OutputPixel::Black),
+        1 => InputPixel::Color(OutputPixel::White),
+        _ => InputPixel::Transparent,
+    }
+}
+
+// Returns (width, height, depth)
+// width = number of columns
+// height = number of rows
+// depth = number of layers
+fn get_dims(image: &Image) -> (usize, usize, usize) {
+    let depth = image.len();
+    let height = image[0].len();
+    let width = image[0][0].len();
+    (width, height, depth)
+}
 
 fn score_image(image: &Image) -> ImageScore {
     image.iter().map(|layer| score_layer(layer)).collect()
