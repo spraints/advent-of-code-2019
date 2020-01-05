@@ -98,17 +98,11 @@ where
     for _ in 0..count {
         coords = step(coords);
         dist = dist + 1;
-        // TODO fix mutable/immutable borrowing conflict here.
-        match grid.get(&coords) {
-            None => grid.insert(coords, (wire_name, calc_dist(&coords), dist)),
-            Some((wire_names, taxidist, wiredist)) => {
-                let mut newwiredist = *wiredist;
-                if wire_names & wire_name == 0 {
-                    newwiredist = newwiredist + dist;
-                }
-                grid.insert(coords, (wire_names | wire_name, *taxidist, newwiredist))
-            }
-        };
+        let (wire_names, _, wiredist) = grid.entry(coords).or_insert((0, calc_dist(&coords), 0));
+        if *wire_names & wire_name == 0 {
+            *wiredist += dist
+        }
+        *wire_names = *wire_names | wire_name;
     }
     (coords, dist)
 }
