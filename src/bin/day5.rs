@@ -28,7 +28,6 @@ fn run(mut memory: &mut Memory) {
         op_input,
         op_output,
         op_jump_if_true,
-
         op_jump_if_false,
         op_lt,
         op_eq,
@@ -37,7 +36,7 @@ fn run(mut memory: &mut Memory) {
     let mut pc = 0;
     println!("[{}] {:?}", pc, memory);
     loop {
-        println!(" ... {:?} ...", memory.get(pc..pc+4));
+        println!(" ... {:?} ...", memory.get(pc..pc + 4));
         let op = memory[pc] as usize;
         let opcode = op % 100;
         if opcode == 99 {

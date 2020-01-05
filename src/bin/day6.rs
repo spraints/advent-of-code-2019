@@ -59,7 +59,12 @@ fn walk_to_root(objs: &OrbitGraph, start: &Option<String>, mut accum: Vec<String
 fn intersecting_paths(path1: Vec<String>, path2: Vec<String>) -> Result<Vec<String>, String> {
     println!("p1: {:?}", path1);
     println!("p2: {:?}", path2);
-    let overlap = path1.iter().rev().zip(path2.iter().rev()).filter(|(item1, item2)| item1 == item2).count();
+    let overlap = path1
+        .iter()
+        .rev()
+        .zip(path2.iter().rev())
+        .filter(|(item1, item2)| item1 == item2)
+        .count();
     if overlap == 0 {
         Err("no overlap!".to_string())
     } else {

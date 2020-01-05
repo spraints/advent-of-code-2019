@@ -1,6 +1,6 @@
+use spraints_advent_of_code_2019::intcode::{self, IntCodeComputer, IntCodeMemory};
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
-use spraints_advent_of_code_2019::intcode::{self,IntCodeComputer,IntCodeMemory};
 
 #[cfg(test)]
 mod tests {

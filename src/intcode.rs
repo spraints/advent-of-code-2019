@@ -1,8 +1,8 @@
 //////////
 // INTCODE
 
-use std::sync::mpsc::{Receiver, Sender};
 use std::io;
+use std::sync::mpsc::{Receiver, Sender};
 
 pub struct IntCodeComputer {
     pub name: String,
@@ -161,19 +161,11 @@ fn op_output(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize)
     pc + 2
 }
 
-fn op_jump_if_true(
-    computer: &mut IntCodeComputer,
-    modes: IntCodeModesIter,
-    pc: usize,
-) -> usize {
+fn op_jump_if_true(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
     jump_if(true, computer, modes, pc)
 }
 
-fn op_jump_if_false(
-    computer: &mut IntCodeComputer,
-    modes: IntCodeModesIter,
-    pc: usize,
-) -> usize {
+fn op_jump_if_false(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
     jump_if(false, computer, modes, pc)
 }
 
