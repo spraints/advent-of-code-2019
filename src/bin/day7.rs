@@ -1,7 +1,6 @@
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
-use spraints_advent_of_code_2019::intcode::*;
+use spraints_advent_of_code_2019::intcode::{self,IntCodeComputer,IntCodeMemory};
 
 #[cfg(test)]
 mod tests {
@@ -58,7 +57,7 @@ fn main() {
     println!("INTCODE ONLINE");
     println!("--------------");
 
-    let program = intcode_read_program();
+    let program = intcode::read_program();
 
     part1(&program, false);
 
@@ -109,7 +108,7 @@ fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
 
         threads.push(thread::spawn(move || {
             //let name = computer.name.clone();
-            intcode_run(computer);
+            intcode::run(computer);
             //println!("{} finished!", name);
         }));
 
@@ -200,7 +199,7 @@ fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
         }));
 
         threads.push(thread::spawn(move || {
-            intcode_run(computer);
+            intcode::run(computer);
         }));
 
         last_rx = out_rx;
