@@ -26,10 +26,7 @@ mod tests {
     #[test]
     fn test_render() {
         let image = parse_image("0222112222120000", 2, 2);
-        assert_eq!(
-            vec![vec![BLACK, WHITE], vec![WHITE, BLACK],],
-            render(&image)
-        );
+        assert_eq!(" ■\n■ \n", render(&image));
     }
 }
 
@@ -38,7 +35,7 @@ fn main() {
 
     let image = read_image(25, 6);
     if verbose {
-        dump(&image);
+        dump_image(&image);
     }
 
     let scores = score_image(&image);
@@ -47,14 +44,21 @@ fn main() {
         |res, score| if score[0] < res[0] { *score } else { res },
     );
     println!("CHECKSUM: {}", best_layer[1] * best_layer[2]);
+
+    println!("PRETTY PICTURE:");
+    println!("{}", render(&image));
 }
 
-fn dump(image: &Image) {
+fn dump_image(image: &Image) {
     for layer in image {
         println!("------");
-        for row in layer {
-            println!("{:?}", row);
-        }
+        dump_layer(layer);
+    }
+}
+
+fn dump_layer(layer: &Layer) {
+    for row in layer {
+        println!("{:?}", row);
     }
 }
 
@@ -68,22 +72,28 @@ const BLACK: u8 = 0;
 const WHITE: u8 = 1;
 const TRANSPARENT: u8 = 2;
 
-fn render(image: &Image) -> Layer {
+// this color scheme is good for a terminal with black background.
+const RENDERED_BLACK: char = ' ';
+const RENDERED_WHITE: char = '■';
+
+fn render(image: &Image) -> String {
     let (width, height, _) = get_dims(&image);
-    let mut res = vec![];
+    let mut res = String::new();
     for i in 0..height {
-        let mut row = vec![];
         for j in 0..width {
-            let mut output_color = 2;
+            let mut rendered_pixel = '?';
             for layer in image.iter().rev() {
                 let pixel = layer[i][j];
-                if pixel < TRANSPARENT {
-                    output_color = pixel;
+                match pixel {
+                    BLACK => rendered_pixel = RENDERED_BLACK,
+                    WHITE => rendered_pixel = RENDERED_WHITE,
+                    TRANSPARENT => (),
+                    _ => (),
                 }
             }
-            row.push(output_color);
+            res.push(rendered_pixel);
         }
-        res.push(row);
+        res.push('\n');
     }
     res
 }
