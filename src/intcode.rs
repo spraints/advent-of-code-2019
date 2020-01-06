@@ -156,12 +156,37 @@ impl Iterator for IntCodeModesIter {
     }
 }
 
-fn get_param(computer: &mut IntCodeComputer, modes: &mut IntCodeModesIter, off: usize) -> Item {
-    let raw = get_mem(computer, computer.pc + off);
-    match modes.next().unwrap() {
-        ModeType::Position => get_mem(computer, raw as usize),
-        ModeType::Immediate => raw,
-        ModeType::Relative => get_mem(computer, (raw + computer.relative_base) as usize),
+struct Params<'a> {
+    computer: &'a mut IntCodeComputer,
+    modes: IntCodeModesIter,
+    off: usize,
+}
+
+impl Params<'_> {
+    fn new(computer: &mut IntCodeComputer, modes: IntCodeModesIter) -> Params {
+        let off = computer.pc + 1;
+        Params {
+            computer,
+            modes,
+            off,
+        }
+    }
+
+    fn read_next(&mut self) -> Item {
+        let raw = self.next_raw();
+        match self.modes.next().unwrap() {
+            ModeType::Position => get_mem(self.computer, raw as usize),
+            ModeType::Immediate => raw,
+            ModeType::Relative => {
+                get_mem(self.computer, (raw + self.computer.relative_base) as usize)
+            }
+        }
+    }
+
+    fn next_raw(&mut self) -> Item {
+        let res = get_mem(self.computer, self.off);
+        self.off += 1;
+        res
     }
 }
 
@@ -209,17 +234,19 @@ fn op_zero(_computer: &mut IntCodeComputer, _modes: IntCodeModesIter) {
     panic!("OP 0 DOES NOT EXIST");
 }
 
-fn op_add(computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let arg1 = get_param(computer, &mut modes, 1);
-    let arg2 = get_param(computer, &mut modes, 2);
+fn op_add(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let arg1 = params.read_next();
+    let arg2 = params.read_next();
     let dest_addr = computer.memory[computer.pc + 3] as usize;
     set_mem(computer, dest_addr, arg1 + arg2);
     computer.pc += 4;
 }
 
-fn op_mult(computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let arg1 = get_param(computer, &mut modes, 1);
-    let arg2 = get_param(computer, &mut modes, 2);
+fn op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let arg1 = params.read_next();
+    let arg2 = params.read_next();
     let dest_addr = computer.memory[computer.pc + 3] as usize;
     set_mem(computer, dest_addr, arg1 * arg2);
     computer.pc += 4;
@@ -252,8 +279,9 @@ fn op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter) {
     computer.pc += 2;
 }
 
-fn op_output(computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let val = get_param(computer, &mut modes, 1);
+fn op_output(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let val = params.read_next();
     if computer.verbose {
         println!("  ({}: output: {})", computer.name, val);
     }
@@ -271,9 +299,10 @@ fn op_jump_if_false(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     jump_if(false, computer, modes)
 }
 
-fn jump_if(cond: bool, computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let arg1 = get_param(computer, &mut modes, 1);
-    let arg2 = get_param(computer, &mut modes, 2);
+fn jump_if(cond: bool, computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let arg1 = params.read_next();
+    let arg2 = params.read_next();
     if (cond && arg1 != 0) || (!cond && arg1 == 0) {
         computer.pc = arg2 as usize;
     } else {
@@ -281,24 +310,27 @@ fn jump_if(cond: bool, computer: &mut IntCodeComputer, mut modes: IntCodeModesIt
     }
 }
 
-fn op_lt(computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let arg1 = get_param(computer, &mut modes, 1);
-    let arg2 = get_param(computer, &mut modes, 2);
+fn op_lt(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let arg1 = params.read_next();
+    let arg2 = params.read_next();
     let dest_addr = computer.memory[computer.pc + 3] as usize;
     set_mem(computer, dest_addr, if arg1 < arg2 { 1 } else { 0 });
     computer.pc += 4;
 }
 
-fn op_eq(computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let arg1 = get_param(computer, &mut modes, 1);
-    let arg2 = get_param(computer, &mut modes, 2);
+fn op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let arg1 = params.read_next();
+    let arg2 = params.read_next();
     let dest_addr = computer.memory[computer.pc + 3] as usize;
     set_mem(computer, dest_addr, if arg1 == arg2 { 1 } else { 0 });
     computer.pc += 4;
 }
 
-fn op_relative_base_offset(computer: &mut IntCodeComputer, mut modes: IntCodeModesIter) {
-    let arg = get_param(computer, &mut modes, 1);
+fn op_relative_base_offset(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+    let mut params = Params::new(computer, modes);
+    let arg = params.read_next();
     if computer.verbose {
         println!(
             " {} relative base = {} + {}",
