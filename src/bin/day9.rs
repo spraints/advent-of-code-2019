@@ -16,8 +16,10 @@ fn part1(program: &IntCodeMemory) {
     let (in_tx, in_rx) = mpsc::channel();
     let (out_tx, out_rx) = mpsc::channel();
     send_all(in_tx, vec![1]);
-    intcode::run("part1", program.clone(), in_rx, out_tx, false);
-    println!("OUTPUT: {:?}", out_rx.recv());
+    intcode::run("part1", program.clone(), in_rx, out_tx, true);
+    for x in out_rx {
+        println!("OUTPUT: {:?}", x);
+    }
 }
 
 fn send_all(tx: Sender<Option<intcode::Item>>, vals: Vec<intcode::Item>) {

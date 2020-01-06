@@ -93,11 +93,11 @@ pub fn run(
         op_jump_if_false,        // 6
         op_lt,                   // 7
         op_eq,                   // 8
-        op_adjust_relative_base, // 9
+        op_relative_base_offset, // 9
     ];
 
     if computer.verbose {
-        println!("[{}/{}] {:?}", computer.name, computer.pc, computer.memory);
+        println!("[{}/{}]", computer.name, computer.pc);
     }
     loop {
         if computer.verbose {
@@ -115,7 +115,7 @@ pub fn run(
             let opfn = opcodes[opcode];
             opfn(&mut computer, modes(op / 100));
             if computer.verbose {
-                println!("[{}/{}] {:?}", computer.name, computer.pc, computer.memory);
+                println!("[{}/{}]", computer.name, computer.pc);
             }
         }
     }
@@ -174,17 +174,29 @@ fn get_params(
 }
 
 fn get_mem(computer: &mut IntCodeComputer, addr: usize) -> Item {
-    if addr >= computer.memory.len() {
-        computer.memory.resize(addr + 1, 0);
+    ensure_mem(computer, addr);
+    let val = computer.memory[addr];
+    if computer.verbose {
+        println!(" {}: GET [{}] => {}", computer.name, addr, val);
     }
-    computer.memory[addr]
+    val
 }
 
 fn set_mem(computer: &mut IntCodeComputer, addr: usize, val: Item) {
-    if addr >= computer.memory.len() {
-        computer.memory.resize(addr + 1, 0);
+    ensure_mem(computer, addr);
+    if computer.verbose {
+        println!(" {}: SET [{}] = {}", computer.name, addr, val);
     }
     computer.memory[addr] = val;
+}
+
+fn ensure_mem(computer: &mut IntCodeComputer, addr: usize) {
+    if addr >= computer.memory.len() {
+        if computer.verbose {
+            println!("{} EXPAND MEMORY from {} to {}", computer.name, computer.memory.len(), addr + 1);
+        }
+        computer.memory.resize(addr + 1, 0);
+    }
 }
 
 fn op_zero(_computer: &mut IntCodeComputer, _modes: IntCodeModesIter) {
@@ -210,7 +222,12 @@ fn op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
 }
 
 fn op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter) {
-    let dest_addr = computer.memory[computer.pc + 1] as usize;
+    let base = if computer.memory[computer.pc] / 100 == 2 {
+        computer.relative_base
+    } else {
+        0
+    };
+    let dest_addr = (base + computer.memory[computer.pc + 1]) as usize;
     match computer.inputs.recv() {
         Err(msg) => panic!("{}: receive error: {}", computer.name, msg),
         Ok(optval) => {
@@ -280,8 +297,11 @@ fn op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     computer.pc += 4;
 }
 
-fn op_adjust_relative_base(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
+fn op_relative_base_offset(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let params = get_params(computer, modes, 1);
+    if computer.verbose {
+        println!(" {} relative base = {} + {}", computer.name, computer.relative_base, params[0]);
+    }
     computer.relative_base += params[0];
     computer.pc += 2;
 }
