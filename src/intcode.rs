@@ -1,6 +1,7 @@
 //////////
 // INTCODE
 
+use std::collections::HashMap;
 use std::io;
 use std::sync::mpsc::{Receiver, Sender};
 
@@ -46,6 +47,7 @@ pub type Item = i64;
 struct IntCodeComputer {
     name: String,
     memory: IntCodeMemory,
+    extra_memory: HashMap<usize, Item>,
     inputs: Receiver<Option<Item>>,
     outputs: Sender<Option<Item>>,
     verbose: bool,
@@ -76,6 +78,7 @@ pub fn run(
     let mut computer = IntCodeComputer {
         name: name.to_string(),
         memory,
+        extra_memory: HashMap::new(),
         inputs,
         outputs,
         verbose,
@@ -173,27 +176,41 @@ fn get_params(
     params
 }
 
+const MAX_MEMORY_VEC: usize = 1_000_000;
+
 fn get_mem(computer: &mut IntCodeComputer, addr: usize) -> Item {
-    ensure_mem(computer, addr);
-    let val = computer.memory[addr];
+    let val = if addr < MAX_MEMORY_VEC {
+        computer.memory.get(addr)
+    } else {
+        computer.extra_memory.get(&addr)
+    };
     if computer.verbose {
-        println!(" {}: GET [{}] => {}", computer.name, addr, val);
+        println!(" {}: GET [{}] => {:?}", computer.name, addr, val);
     }
-    val
+    *(val.unwrap_or(&0))
 }
 
 fn set_mem(computer: &mut IntCodeComputer, addr: usize, val: Item) {
-    ensure_mem(computer, addr);
     if computer.verbose {
         println!(" {}: SET [{}] = {}", computer.name, addr, val);
     }
-    computer.memory[addr] = val;
+    if addr < MAX_MEMORY_VEC {
+        ensure_mem(computer, addr);
+        computer.memory[addr] = val;
+    } else {
+        computer.extra_memory.insert(addr, val);
+    }
 }
 
 fn ensure_mem(computer: &mut IntCodeComputer, addr: usize) {
     if addr >= computer.memory.len() {
         if computer.verbose {
-            println!("{} EXPAND MEMORY from {} to {}", computer.name, computer.memory.len(), addr + 1);
+            println!(
+                "{} EXPAND MEMORY from {} to {}",
+                computer.name,
+                computer.memory.len(),
+                addr + 1
+            );
         }
         computer.memory.resize(addr + 1, 0);
     }
@@ -300,7 +317,10 @@ fn op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
 fn op_relative_base_offset(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let params = get_params(computer, modes, 1);
     if computer.verbose {
-        println!(" {} relative base = {} + {}", computer.name, computer.relative_base, params[0]);
+        println!(
+            " {} relative base = {} + {}",
+            computer.name, computer.relative_base, params[0]
+        );
     }
     computer.relative_base += params[0];
     computer.pc += 2;
