@@ -251,8 +251,7 @@ fn op_add(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let mut params = Params::new(computer, modes);
     let arg1 = params.read_next();
     let arg2 = params.read_next();
-    let dest_addr = computer.memory[computer.pc + 3] as usize;
-    set_mem(computer, dest_addr, arg1 + arg2);
+    params.write_next(arg1 + arg2);
     computer.pc += 4;
 }
 
@@ -260,8 +259,7 @@ fn op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let mut params = Params::new(computer, modes);
     let arg1 = params.read_next();
     let arg2 = params.read_next();
-    let dest_addr = computer.memory[computer.pc + 3] as usize;
-    set_mem(computer, dest_addr, arg1 * arg2);
+    params.write_next(arg1 * arg2);
     computer.pc += 4;
 }
 
@@ -322,8 +320,7 @@ fn op_lt(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let mut params = Params::new(computer, modes);
     let arg1 = params.read_next();
     let arg2 = params.read_next();
-    let dest_addr = computer.memory[computer.pc + 3] as usize;
-    set_mem(computer, dest_addr, if arg1 < arg2 { 1 } else { 0 });
+    params.write_next(if arg1 < arg2 { 1 } else { 0 });
     computer.pc += 4;
 }
 
@@ -331,8 +328,7 @@ fn op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let mut params = Params::new(computer, modes);
     let arg1 = params.read_next();
     let arg2 = params.read_next();
-    let dest_addr = computer.memory[computer.pc + 3] as usize;
-    set_mem(computer, dest_addr, if arg1 == arg2 { 1 } else { 0 });
+    params.write_next(if arg1 == arg2 { 1 } else { 0 });
     computer.pc += 4;
 }
 
