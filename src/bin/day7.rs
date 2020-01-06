@@ -64,7 +64,7 @@ fn main() {
     part2(&program, false);
 }
 
-fn part2(program: &IntCodeMemory, strict: bool) -> i32 {
+fn part2(program: &IntCodeMemory, strict: bool) -> intcode::Item {
     println!("PART 2");
     println!("------");
     let mut max_out = 0;
@@ -78,7 +78,7 @@ fn part2(program: &IntCodeMemory, strict: bool) -> i32 {
     max_out
 }
 
-fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
+fn try_inputs2(program: &IntCodeMemory, inputs: [intcode::Item; 5], strict: bool) -> intcode::Item {
     if strict {
         println!("TRY {:?}", inputs);
     }
@@ -148,7 +148,7 @@ fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
     }
 }
 
-fn part1(program: &IntCodeMemory, strict: bool) -> i32 {
+fn part1(program: &IntCodeMemory, strict: bool) -> intcode::Item {
     println!("PART 1");
     println!("------");
     let mut max_out = 0;
@@ -162,7 +162,7 @@ fn part1(program: &IntCodeMemory, strict: bool) -> i32 {
     max_out
 }
 
-fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
+fn try_inputs(program: &IntCodeMemory, inputs: [intcode::Item; 5], strict: bool) -> intcode::Item {
     if strict {
         println!("TRY {:?}", inputs);
     }
@@ -210,13 +210,13 @@ fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
     }
 }
 
-fn intcode_send(chan: &Sender<Option<i32>>, val: i32) {
+fn intcode_send(chan: &Sender<Option<intcode::Item>>, val: intcode::Item) {
     chan.send(Some(val))
         .expect(&format!("should be able to send {} to {:?}", val, chan));
 }
 
 const COPY_CHAN_VERBOSE: bool = false;
-fn copy_chan(label: &str, rx: Receiver<Option<i32>>, tx: Sender<Option<i32>>) {
+fn copy_chan(label: &str, rx: Receiver<Option<intcode::Item>>, tx: Sender<Option<intcode::Item>>) {
     for val in rx {
         match val {
             None => {
@@ -238,14 +238,14 @@ fn copy_chan(label: &str, rx: Receiver<Option<i32>>, tx: Sender<Option<i32>>) {
     //println!("{} finished", label);
 }
 
-fn all_perms(vals: [i32; 5]) -> Vec<[i32; 5]> {
+fn all_perms(vals: [intcode::Item; 5]) -> Vec<[intcode::Item; 5]> {
     let mut res = vec![];
     let mut vals = vals.clone();
     heap_permutation(&mut res, &mut vals, 5);
     res
 }
 
-fn heap_permutation(res: &mut Vec<[i32; 5]>, vals: &mut [i32; 5], size: usize) {
+fn heap_permutation(res: &mut Vec<[intcode::Item; 5]>, vals: &mut [intcode::Item; 5], size: usize) {
     if size == 1 {
         res.push(vals.clone());
         return;

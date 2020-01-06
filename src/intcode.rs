@@ -26,22 +26,34 @@ mod tests {
         }
     }
 
-    fn dead_receiver() -> Receiver<Option<i32>> {
+    #[test]
+    fn test_day9_ex2_sixteen() {
+        let program = vec![1102,34915192,34915192,7,4,7,99,0];
+        let (out_tx, out_rx) = mpsc::channel();
+        run("test", program.clone(), dead_receiver(), out_tx, false);
+        let n = out_rx.recv().unwrap().unwrap();
+        assert!(n >= 1_000_000_000_000_000);
+        assert!(n < 10_000_000_000_000_000);
+    }
+
+    fn dead_receiver() -> Receiver<Option<Item>> {
         mpsc::channel().1
     }
 }
 
+pub type Item = i64;
+
 struct IntCodeComputer {
     name: String,
     memory: IntCodeMemory,
-    inputs: Receiver<Option<i32>>,
-    outputs: Sender<Option<i32>>,
+    inputs: Receiver<Option<Item>>,
+    outputs: Sender<Option<Item>>,
     verbose: bool,
     pc: usize,
-    relative_base: i32,
+    relative_base: Item,
 }
 
-pub type IntCodeMemory = Vec<i32>;
+pub type IntCodeMemory = Vec<Item>;
 
 pub fn read_program() -> IntCodeMemory {
     let mut line = String::new();
@@ -57,8 +69,8 @@ pub fn read_program() -> IntCodeMemory {
 pub fn run(
     name: &str,
     memory: IntCodeMemory,
-    inputs: Receiver<Option<i32>>,
-    outputs: Sender<Option<i32>>,
+    inputs: Receiver<Option<Item>>,
+    outputs: Sender<Option<Item>>,
     verbose: bool,
 ) -> IntCodeMemory {
     let mut computer = IntCodeComputer {
@@ -161,7 +173,7 @@ fn get_params(
     params
 }
 
-fn get_mem(computer: &mut IntCodeComputer, addr: usize) -> i32 {
+fn get_mem(computer: &mut IntCodeComputer, addr: usize) -> Item {
     if addr >= computer.memory.len() {
         // TODO This should only need to be +1, but something is not right.
         computer.memory.resize(addr * 2, 0);
