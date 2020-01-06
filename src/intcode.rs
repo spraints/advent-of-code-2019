@@ -158,22 +158,23 @@ impl Iterator for IntCodeModesIter {
 
 fn get_params(
     computer: &mut IntCodeComputer,
-    modes: IntCodeModesIter,
+    mut modes: IntCodeModesIter,
     count: usize,
 ) -> IntCodeMemory {
-    let pc = computer.pc;
-    let params = computer.memory[pc + 1..pc + 1 + count].to_vec();
-    let params: IntCodeMemory = params
-        .into_iter()
-        .zip(modes)
-        .map(|(raw, mode)| match mode {
-            ModeType::Position => get_mem(computer, raw as usize),
-            ModeType::Immediate => raw,
-            ModeType::Relative => get_mem(computer, (raw + computer.relative_base) as usize),
-        })
-        .collect();
-    assert_eq!(count, params.len());
-    params
+    let mut res = vec![];
+    for i in 0..count {
+        res.push(get_param(computer, &mut modes, i + 1));
+    }
+    res
+}
+
+fn get_param(computer: &mut IntCodeComputer, modes: &mut IntCodeModesIter, off: usize) -> Item {
+    let raw = get_mem(computer, computer.pc + off);
+    match modes.next().unwrap() {
+        ModeType::Position => get_mem(computer, raw as usize),
+        ModeType::Immediate => raw,
+        ModeType::Relative => get_mem(computer, (raw + computer.relative_base) as usize),
+    }
 }
 
 const MAX_MEMORY_VEC: usize = 1_000_000;
