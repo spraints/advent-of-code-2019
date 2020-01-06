@@ -183,6 +183,19 @@ impl Params<'_> {
         }
     }
 
+    fn write_next(&mut self, val: Item) {
+        let raw = self.next_raw();
+        match self.modes.next().unwrap() {
+            ModeType::Position => set_mem(self.computer, raw as usize, val),
+            ModeType::Immediate => panic!("illegal write to immediate addr"),
+            ModeType::Relative => set_mem(
+                self.computer,
+                (raw + self.computer.relative_base) as usize,
+                val,
+            ),
+        };
+    }
+
     fn next_raw(&mut self) -> Item {
         let res = get_mem(self.computer, self.off);
         self.off += 1;
@@ -252,13 +265,7 @@ fn op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     computer.pc += 4;
 }
 
-fn op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter) {
-    let base = if computer.memory[computer.pc] / 100 == 2 {
-        computer.relative_base
-    } else {
-        0
-    };
-    let dest_addr = (base + computer.memory[computer.pc + 1]) as usize;
+fn op_input(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     match computer.inputs.recv() {
         Err(msg) => panic!("{}: receive error: {}", computer.name, msg),
         Ok(optval) => {
@@ -271,7 +278,8 @@ fn op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter) {
                     if computer.verbose {
                         println!("  ({}: read: {})", computer.name, val);
                     }
-                    set_mem(computer, dest_addr, val);
+                    let mut params = Params::new(computer, modes);
+                    params.write_next(val);
                 }
             };
         }
