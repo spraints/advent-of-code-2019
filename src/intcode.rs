@@ -28,7 +28,7 @@ mod tests {
 
     #[test]
     fn test_day9_ex2_sixteen() {
-        let program = vec![1102,34915192,34915192,7,4,7,99,0];
+        let program = vec![1102, 34915192, 34915192, 7, 4, 7, 99, 0];
         let (out_tx, out_rx) = mpsc::channel();
         run("test", program.clone(), dead_receiver(), out_tx, false);
         let n = out_rx.recv().unwrap().unwrap();
@@ -175,10 +175,16 @@ fn get_params(
 
 fn get_mem(computer: &mut IntCodeComputer, addr: usize) -> Item {
     if addr >= computer.memory.len() {
-        // TODO This should only need to be +1, but something is not right.
-        computer.memory.resize(addr * 2, 0);
+        computer.memory.resize(addr + 1, 0);
     }
     computer.memory[addr]
+}
+
+fn set_mem(computer: &mut IntCodeComputer, addr: usize, val: Item) {
+    if addr >= computer.memory.len() {
+        computer.memory.resize(addr + 1, 0);
+    }
+    computer.memory[addr] = val;
 }
 
 fn op_zero(_computer: &mut IntCodeComputer, _modes: IntCodeModesIter) {
@@ -190,7 +196,7 @@ fn op_add(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let arg1 = params[0];
     let arg2 = params[1];
     let dest_addr = computer.memory[computer.pc + 3] as usize;
-    computer.memory[dest_addr] = arg1 + arg2;
+    set_mem(computer, dest_addr, arg1 + arg2);
     computer.pc += 4;
 }
 
@@ -199,7 +205,7 @@ fn op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let arg1 = params[0];
     let arg2 = params[1];
     let dest_addr = computer.memory[computer.pc + 3] as usize;
-    computer.memory[dest_addr] = arg1 * arg2;
+    set_mem(computer, dest_addr, arg1 * arg2);
     computer.pc += 4;
 }
 
@@ -217,7 +223,7 @@ fn op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter) {
                     if computer.verbose {
                         println!("  ({}: read: {})", computer.name, val);
                     }
-                    computer.memory[dest_addr] = val;
+                    set_mem(computer, dest_addr, val);
                 }
             };
         }
@@ -261,7 +267,7 @@ fn op_lt(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let arg1 = params[0];
     let arg2 = params[1];
     let dest_addr = computer.memory[computer.pc + 3] as usize;
-    computer.memory[dest_addr] = if arg1 < arg2 { 1 } else { 0 };
+    set_mem(computer, dest_addr, if arg1 < arg2 { 1 } else { 0 });
     computer.pc += 4;
 }
 
@@ -270,7 +276,7 @@ fn op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter) {
     let arg1 = params[0];
     let arg2 = params[1];
     let dest_addr = computer.memory[computer.pc + 3] as usize;
-    computer.memory[dest_addr] = if arg1 == arg2 { 1 } else { 0 };
+    set_mem(computer, dest_addr, if arg1 == arg2 { 1 } else { 0 });
     computer.pc += 4;
 }
 
