@@ -1,6 +1,5 @@
-use std::io;
-use std::sync::mpsc;
-use std::sync::mpsc::{Receiver, Sender};
+use spraints_advent_of_code_2019::intcode::{self, IntCodeMemory};
+use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
 #[cfg(test)]
@@ -58,14 +57,14 @@ fn main() {
     println!("INTCODE ONLINE");
     println!("--------------");
 
-    let program = intcode_read_program();
+    let program = intcode::read_program();
 
     part1(&program, false);
 
     part2(&program, false);
 }
 
-fn part2(program: &IntCodeMemory, strict: bool) -> i32 {
+fn part2(program: &IntCodeMemory, strict: bool) -> intcode::Item {
     println!("PART 2");
     println!("------");
     let mut max_out = 0;
@@ -79,7 +78,7 @@ fn part2(program: &IntCodeMemory, strict: bool) -> i32 {
     max_out
 }
 
-fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
+fn try_inputs2(program: &IntCodeMemory, inputs: [intcode::Item; 5], strict: bool) -> intcode::Item {
     if strict {
         println!("TRY {:?}", inputs);
     }
@@ -94,22 +93,15 @@ fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
 
         let input = *input;
 
-        let computer = IntCodeComputer {
-            name: format!("[{}]", input),
-            memory: program.clone(),
-            inputs: in_rx,
-            outputs: out_tx,
-            verbose: false,
-        };
-
         threads.push(thread::spawn(move || {
             intcode_send(&in_tx, input);
             copy_chan(&format!("{} input", input), last_rx, in_tx);
         }));
 
+        let cloned_program = program.clone();
         threads.push(thread::spawn(move || {
-            //let name = computer.name.clone();
-            intcode_run(computer);
+            let name = format!("[{}]", input);
+            intcode::run(&name, cloned_program, in_rx, out_tx, false);
             //println!("{} finished!", name);
         }));
 
@@ -156,7 +148,7 @@ fn try_inputs2(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
     }
 }
 
-fn part1(program: &IntCodeMemory, strict: bool) -> i32 {
+fn part1(program: &IntCodeMemory, strict: bool) -> intcode::Item {
     println!("PART 1");
     println!("------");
     let mut max_out = 0;
@@ -170,7 +162,7 @@ fn part1(program: &IntCodeMemory, strict: bool) -> i32 {
     max_out
 }
 
-fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
+fn try_inputs(program: &IntCodeMemory, inputs: [intcode::Item; 5], strict: bool) -> intcode::Item {
     if strict {
         println!("TRY {:?}", inputs);
     }
@@ -186,21 +178,15 @@ fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
 
         let input = *input;
 
-        let computer = IntCodeComputer {
-            name: format!("[{}]", input),
-            memory: program.clone(),
-            inputs: in_rx,
-            outputs: out_tx,
-            verbose: false,
-        };
-
         threads.push(thread::spawn(move || {
             intcode_send(&in_tx, input);
             intcode_send(&in_tx, last_rx.recv().unwrap().unwrap());
         }));
 
+        let cloned_program = program.clone();
         threads.push(thread::spawn(move || {
-            intcode_run(computer);
+            let name = format!("[{}]", input);
+            intcode::run(&name, cloned_program, in_rx, out_tx, false);
         }));
 
         last_rx = out_rx;
@@ -224,13 +210,13 @@ fn try_inputs(program: &IntCodeMemory, inputs: [i32; 5], strict: bool) -> i32 {
     }
 }
 
-fn intcode_send(chan: &Sender<Option<i32>>, val: i32) {
+fn intcode_send(chan: &Sender<Option<intcode::Item>>, val: intcode::Item) {
     chan.send(Some(val))
         .expect(&format!("should be able to send {} to {:?}", val, chan));
 }
 
 const COPY_CHAN_VERBOSE: bool = false;
-fn copy_chan(label: &str, rx: Receiver<Option<i32>>, tx: Sender<Option<i32>>) {
+fn copy_chan(label: &str, rx: Receiver<Option<intcode::Item>>, tx: Sender<Option<intcode::Item>>) {
     for val in rx {
         match val {
             None => {
@@ -252,14 +238,14 @@ fn copy_chan(label: &str, rx: Receiver<Option<i32>>, tx: Sender<Option<i32>>) {
     //println!("{} finished", label);
 }
 
-fn all_perms(vals: [i32; 5]) -> Vec<[i32; 5]> {
+fn all_perms(vals: [intcode::Item; 5]) -> Vec<[intcode::Item; 5]> {
     let mut res = vec![];
     let mut vals = vals.clone();
     heap_permutation(&mut res, &mut vals, 5);
     res
 }
 
-fn heap_permutation(res: &mut Vec<[i32; 5]>, vals: &mut [i32; 5], size: usize) {
+fn heap_permutation(res: &mut Vec<[intcode::Item; 5]>, vals: &mut [intcode::Item; 5], size: usize) {
     if size == 1 {
         res.push(vals.clone());
         return;
@@ -278,240 +264,3 @@ fn heap_permutation(res: &mut Vec<[i32; 5]>, vals: &mut [i32; 5], size: usize) {
         }
     }
 }
-
-//////////
-// INTCODE
-
-struct IntCodeComputer {
-    name: String,
-    memory: IntCodeMemory,
-    inputs: Receiver<Option<i32>>,
-    outputs: Sender<Option<i32>>,
-    verbose: bool,
-}
-
-trait IntCodeInput {
-    fn read_int(&mut self) -> i32;
-}
-
-trait IntCodeOutput {
-    fn write_int(&mut self, _: i32);
-}
-
-type IntCodeMemory = Vec<i32>;
-
-fn intcode_read_program() -> IntCodeMemory {
-    let mut line = String::new();
-    io::stdin()
-        .read_line(&mut line)
-        .expect("Error reading program from STDIN");
-    let parts = line.trim().split(',');
-    parts
-        .map(|s| s.parse().expect("Error parsing int"))
-        .collect()
-}
-
-fn intcode_run(mut computer: IntCodeComputer) {
-    let opcodes = [
-        intcode_op_add,
-        intcode_op_mult,
-        intcode_op_input,
-        intcode_op_output,
-        intcode_op_jump_if_true,
-        intcode_op_jump_if_false,
-        intcode_op_lt,
-        intcode_op_eq,
-    ];
-
-    let mut pc = 0;
-    if computer.verbose {
-        println!("[{}/{}] {:?}", computer.name, pc, computer.memory);
-    }
-    loop {
-        if computer.verbose {
-            println!(
-                " {}: ... {:?} ...",
-                computer.name,
-                computer.memory.get(pc..pc + 4)
-            );
-        }
-        let op = computer.memory[pc] as usize;
-        let opcode = op % 100;
-        if opcode == 99 {
-            break;
-        } else {
-            let opfn = opcodes[opcode - 1];
-            pc = opfn(&mut computer, intcode_modes(op / 100), pc);
-            if computer.verbose {
-                println!("[{}/{}] {:?}", computer.name, pc, computer.memory);
-            }
-        }
-    }
-
-    computer.outputs.send(None).unwrap_or(());
-}
-
-fn intcode_modes(modes: usize) -> IntCodeModesIter {
-    IntCodeModesIter { modes }
-}
-
-struct IntCodeModesIter {
-    modes: usize,
-}
-
-enum ModeType {
-    Position,
-    Immediate,
-}
-
-impl Iterator for IntCodeModesIter {
-    type Item = ModeType;
-    fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.modes % 10;
-        self.modes = self.modes / 10;
-        Some(if cur == 0 {
-            ModeType::Position
-        } else {
-            ModeType::Immediate
-        })
-    }
-}
-
-fn intcode_get_params(
-    memory: &IntCodeMemory,
-    modes: IntCodeModesIter,
-    pc: usize,
-    count: usize,
-) -> IntCodeMemory {
-    let params: IntCodeMemory = memory[pc + 1..pc + 1 + count]
-        .into_iter()
-        .zip(modes)
-        .map(|(raw, mode)| match mode {
-            ModeType::Position => memory[*raw as usize],
-            ModeType::Immediate => *raw,
-        })
-        .collect();
-    assert_eq!(count, params.len());
-    params
-}
-
-fn intcode_op_add(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&computer.memory, modes, pc, 2);
-    let arg1 = params[0];
-    let arg2 = params[1];
-    let dest_addr = computer.memory[pc + 3] as usize;
-    computer.memory[dest_addr] = arg1 + arg2;
-    pc + 4
-}
-
-fn intcode_op_mult(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&computer.memory, modes, pc, 2);
-    let arg1 = params[0];
-    let arg2 = params[1];
-    let dest_addr = computer.memory[pc + 3] as usize;
-    computer.memory[dest_addr] = arg1 * arg2;
-    pc + 4
-}
-
-fn intcode_op_input(computer: &mut IntCodeComputer, _: IntCodeModesIter, pc: usize) -> usize {
-    let dest_addr = computer.memory[pc + 1] as usize;
-    match computer.inputs.recv() {
-        Err(msg) => panic!("{}: receive error: {}", computer.name, msg),
-        Ok(optval) => {
-            match optval {
-                None => panic!(
-                    "{}: expected a value to be available, but found None!",
-                    computer.name
-                ),
-                Some(val) => {
-                    if computer.verbose {
-                        println!("  ({}: read: {})", computer.name, val);
-                    }
-                    computer.memory[dest_addr] = val;
-                }
-            };
-        }
-    };
-    pc + 2
-}
-
-fn intcode_op_output(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&computer.memory, modes, pc, 1);
-    let val = params[0];
-    if computer.verbose {
-        println!("  ({}: output: {})", computer.name, val);
-    }
-    if let Err(msg) = computer.outputs.send(Some(val)) {
-        panic!("{}: send error: {}", computer.name, msg);
-    }
-    pc + 2
-}
-
-fn intcode_op_jump_if_true(
-    computer: &mut IntCodeComputer,
-    modes: IntCodeModesIter,
-    pc: usize,
-) -> usize {
-    intcode_jump_if(true, computer, modes, pc)
-}
-
-fn intcode_op_jump_if_false(
-    computer: &mut IntCodeComputer,
-    modes: IntCodeModesIter,
-    pc: usize,
-) -> usize {
-    intcode_jump_if(false, computer, modes, pc)
-}
-
-fn intcode_jump_if(
-    cond: bool,
-    computer: &mut IntCodeComputer,
-    modes: IntCodeModesIter,
-    pc: usize,
-) -> usize {
-    let params = intcode_get_params(&computer.memory, modes, pc, 2);
-    let arg1 = params[0];
-    let arg2 = params[1];
-    if (cond && arg1 != 0) || (!cond && arg1 == 0) {
-        arg2 as usize
-    } else {
-        pc + 3
-    }
-}
-
-fn intcode_op_lt(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&computer.memory, modes, pc, 2);
-    let arg1 = params[0];
-    let arg2 = params[1];
-    let dest_addr = computer.memory[pc + 3] as usize;
-    computer.memory[dest_addr] = if arg1 < arg2 { 1 } else { 0 };
-    pc + 4
-}
-
-fn intcode_op_eq(computer: &mut IntCodeComputer, modes: IntCodeModesIter, pc: usize) -> usize {
-    let params = intcode_get_params(&computer.memory, modes, pc, 2);
-    let arg1 = params[0];
-    let arg2 = params[1];
-    let dest_addr = computer.memory[pc + 3] as usize;
-    computer.memory[dest_addr] = if arg1 == arg2 { 1 } else { 0 };
-    pc + 4
-}
-
-////////
-// I/O
-
-//fn intcode_stdin_input() -> Box<dyn IntCodeInput> {
-//    Box::new(IntCodeStdinInput {})
-//}
-//
-//struct IntCodeStdinInput {}
-//
-//impl IntCodeInput for IntCodeStdinInput {
-//    fn read_int(&mut self) -> i32 {
-//        let mut line = String::new();
-//        io::stdin()
-//            .read_line(&mut line)
-//            .expect("Error reading input from STDIN");
-//        line.trim().parse().expect("Error parsing int for input")
-//    }
-//}
