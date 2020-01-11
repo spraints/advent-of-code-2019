@@ -1,6 +1,6 @@
 [package]
 name = "spraints-advent-of-code-2019"
-version = "0.9.0"
+version = "0.10.0"
 authors = ["Matt Burke <spraints@gmail.com>"]
 edition = "2018"
 
