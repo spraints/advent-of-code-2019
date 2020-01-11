@@ -175,9 +175,7 @@ fn points_between(a: Coords, b: Coords) -> Vec<Coords> {
     for x in xrange {
         for y in yrange.clone() {
             let coord = (x, y);
-            println!("{:?} / {:?} / {:?}?", a, coord, b);
             if coord != a && coord != b && slope(&a, &coord) == abslope {
-                println!("  YES!");
                 res.push(coord);
             }
         }
@@ -188,9 +186,7 @@ fn points_between(a: Coords, b: Coords) -> Vec<Coords> {
 fn slope(a: &Coords, b: &Coords) -> f32 {
     let (x1, y1) = (a.0 as f32, a.1 as f32);
     let (x2, y2) = (b.0 as f32, b.1 as f32);
-    let res = (y2 - y1) / (x2 - x1);
-    println!("{:?} / {:?} => {}", a, b, res);
-    res
+    (y2 - y1) / (x2 - x1)
 }
 
 fn extents(map: &Map) -> (usize, usize) {
