@@ -3,7 +3,7 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{self, Receiver, Sender};
 
 #[cfg(test)]
 mod tests {
@@ -66,6 +66,31 @@ pub fn read_program() -> IntCodeMemory {
     parts
         .map(|s| s.parse().expect("Error parsing int"))
         .collect()
+}
+
+pub fn run_easy(name: &str, memory: IntCodeMemory, inputs: Vec<Item>, verbose: bool) -> Vec<Item> {
+    let (in_tx, in_rx) = mpsc::channel();
+    let (out_tx, out_rx) = mpsc::channel();
+
+    send_all(inputs, in_tx);
+    run(name, memory, in_rx, out_tx, verbose);
+    recv_all(out_rx)
+}
+
+fn send_all(inputs: Vec<Item>, in_tx: Sender<Option<Item>>) {
+    for input in inputs {
+        in_tx.send(Some(input)).expect("send should be ok");
+    }
+}
+
+fn recv_all(out_rx: Receiver<Option<Item>>) -> Vec<Item> {
+    let mut res = vec![];
+    for val in out_rx {
+        if let Some(val) = val {
+            res.push(val);
+        }
+    }
+    res
 }
 
 pub fn run(
