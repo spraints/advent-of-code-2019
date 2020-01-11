@@ -175,12 +175,20 @@ fn points_between(a: Coords, b: Coords) -> Vec<Coords> {
     for x in xrange {
         for y in yrange.clone() {
             let coord = (x, y);
-            if coord != a && coord != b && slope(&a, &coord) == abslope {
+            if coord != a && coord != b && close_enough(slope(&a, &coord), abslope) {
                 res.push(coord);
             }
         }
     }
     res
+}
+
+fn close_enough(s1: f32, s2: f32) -> bool {
+    if s1.is_infinite() || s2.is_infinite() {
+        s1.is_infinite() && s2.is_infinite()
+    } else {
+        (s1 - s2).abs() < 0.001
+    }
 }
 
 fn slope(a: &Coords, b: &Coords) -> f32 {
