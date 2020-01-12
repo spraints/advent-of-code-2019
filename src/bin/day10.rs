@@ -1,5 +1,14 @@
 use std::io::{self, Read};
 
+fn main() {
+    let mut input = String::new();
+    io::stdin()
+        .read_to_string(&mut input)
+        .expect("reading stdin");
+
+    println!("BEST POSITION: {:?}", score(&input));
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
@@ -83,10 +92,7 @@ mod tests {
     }
 
     fn score(input: &str) -> (super::Coords, usize) {
-        println!("{}", input);
-        let map = super::parse_map(input);
-        let scores = super::score_asteroids(&map);
-        super::best_score(scores)
+        super::score(input)
     }
 
     #[test]
@@ -125,14 +131,6 @@ mod tests {
     }
 }
 
-fn main() {
-    let mut input = String::new();
-    io::stdin()
-        .read_to_string(&mut input)
-        .expect("reading stdin");
-    println!("{:?}", parse_map(&input));
-}
-
 #[derive(Debug)]
 struct Map {
     grid: Grid,
@@ -145,6 +143,13 @@ type AsteroidScore = (Coords, usize);
 type Grid = Vec<Vec<bool>>;
 
 type Coords = (usize, usize);
+
+fn score(input: &str) -> AsteroidScore {
+    println!("{}", input);
+    let map = parse_map(input);
+    let scores = score_asteroids(&map);
+    best_score(scores)
+}
 
 fn best_score(scores: Vec<AsteroidScore>) -> AsteroidScore {
     let mut best = ((0, 0), 0);
