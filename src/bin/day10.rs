@@ -83,19 +83,10 @@ mod tests {
     }
 
     fn score(input: &str) -> (super::Coords, usize) {
+        println!("{}", input);
         let map = super::parse_map(input);
-        let mut res = None;
-        let (width, height) = super::extents(&map);
-        for x in 0..width {
-            for y in 0..height {
-                if map[y][x] {
-                    let coords = (x, y);
-                    let count = super::visible(&map, coords);
-                    res = Some((coords, count));
-                }
-            }
-        }
-        res.unwrap()
+        let scores = super::score_asteroids(&map);
+        super::best_score(scores)
     }
 
     #[test]
@@ -142,15 +133,50 @@ fn main() {
     println!("{:?}", parse_map(&input));
 }
 
-type Map = Vec<Vec<bool>>;
+#[derive(Debug)]
+struct Map {
+    grid: Grid,
+    width: usize,
+    height: usize,
+}
+
+type AsteroidScore = (Coords, usize);
+
+type Grid = Vec<Vec<bool>>;
+
 type Coords = (usize, usize);
 
-fn visible(map: &Map, coords: Coords) -> usize {
-    let (width, height) = extents(map);
+fn best_score(scores: Vec<AsteroidScore>) -> AsteroidScore {
+    let mut best = ((0, 0), 0);
+    for score in scores {
+        if score.1 > best.1 {
+            best = score
+        }
+    }
+    best
+}
+
+fn score_asteroids(map: &Map) -> Vec<AsteroidScore> {
+    let mut res = vec![];
+    for x in 0..map.width {
+        for y in 0..map.height {
+            if map.grid[y][x] {
+                let coords = (x, y);
+                res.push((coords, count_visible_asteroids(map, coords.clone())));
+            }
+        }
+    }
+    res
+}
+
+fn count_visible_asteroids(map: &Map, coords: Coords) -> usize {
     let mut res = 0;
-    for x in 0..width {
-        for y in 0..height {
-            if can_see(map, (x, y), coords) {
+    for x in 0..map.width {
+        for y in 0..map.height {
+            if x == coords.0 && y == coords.1 {
+                continue;
+            }
+            if map.grid[y][x] && can_see(map, (x, y), coords) {
                 res += 1;
             }
         }
@@ -160,7 +186,7 @@ fn visible(map: &Map, coords: Coords) -> usize {
 
 fn can_see(map: &Map, from: Coords, to: Coords) -> bool {
     for (x, y) in points_between(from, to) {
-        if map[y][x] {
+        if map.grid[y][x] {
             return false;
         }
     }
@@ -197,13 +223,10 @@ fn slope(a: &Coords, b: &Coords) -> f32 {
     (y2 - y1) / (x2 - x1)
 }
 
-fn extents(map: &Map) -> (usize, usize) {
-    (map[0].len(), map.len())
-}
-
 fn parse_map(input: &str) -> Map {
-    let mut res = vec![];
+    let mut grid = vec![];
     let mut width = None;
+
     for line in input.lines() {
         let mut resline = vec![];
         for c in line.chars() {
@@ -221,7 +244,16 @@ fn parse_map(input: &str) -> Map {
                 }
             }
         };
-        res.push(resline);
+        grid.push(resline);
     }
-    res
+
+    let height = grid.len();
+    Map {
+        grid,
+        height,
+        width: match width {
+            None => 0,
+            Some(x) => x,
+        },
+    }
 }
